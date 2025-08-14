@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gestión de Clientes - Estilo Retro</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Tahoma", sans-serif;
+      background-color: #008080; /* clásico verde-azulado */
+      color: black;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 20px;
+      background-color: #c0c0c0; /* gris típico Win98 */
+      border: 2px solid #fff;
+      border-right-color: #808080;
+      border-bottom-color: #808080;
+      box-shadow: inset -2px -2px #fff, inset 2px 2px #808080;
+    }
+    h1 {
+      background-color: navy;
+      color: white;
+      padding: 5px;
+      font-size: 18px;
+      margin: -20px -20px 10px -20px;
+      font-weight: bold;
+    }
+    p {
+      text-align: center;
+      color: black;
+    }
+    .card {
+      background-color: #e0e0e0;
+      padding: 10px;
+      border: 2px solid #fff;
+      border-right-color: #808080;
+      border-bottom-color: #808080;
+      box-shadow: inset -2px -2px #fff, inset 2px 2px #808080;
+    }
+    .card h2 {
+      margin-top: 0;
+      font-size: 14px;
+      background-color: navy;
+      color: white;
+      padding: 3px 5px;
+    }
+    .grid {
+      display: grid;
+      gap: 15px;
+    }
+    @media(min-width: 1024px) {
+      .grid-2 {
+        grid-template-columns: 1fr 1fr;
+      }
+      .grid-3 {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+    }
+    input, button {
+      width: 95%;
+      padding: 4px;
+      border: 2px solid #808080;
+      border-right-color: #fff;
+      border-bottom-color: #fff;
+      background-color: white;
+      font-family: "Tahoma", sans-serif;
+      font-size: 12px;
+      color: black;
+      margin-top: 2px;
+    }
+    input:focus {
+      outline: none;
+      border: 2px solid navy;
+    }
+    button {
+      background-color: #c0c0c0;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #d4d4d4;
+    }
+    .error {
+      color: red;
+      font-size: 0.8em;
+    }
+    .list-item {
+      background-color: white;
+      padding: 5px;
+      border: 2px solid #808080;
+      border-right-color: #fff;
+      border-bottom-color: #fff;
+    }
+    .actions {
+      display: flex;
+      gap: 5px;
+    }
+    .field {
+      margin-bottom: 10px;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #808080;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Gestión de Clientes - Ingenieria de Software 3</h1>
+
+    <div class="grid grid-2">
+      <!-- Formulario -->
+      <div class="card">
+        <h2>Alta de Cliente</h2>
+        <form id="formCliente">
+          <label>DNI</label>
+          <input id="dni" placeholder="Ingrese el DNI">
+          <div class="error" id="err-dni"></div>
+
+          <label>Nombre</label>
+          <input id="nombre" placeholder="Ingrese el/los nombre/s">
+          <div class="error" id="err-nombre"></div>
+
+          <label>Apellido</label>
+          <input id="apellido" placeholder="Ingrese el/los apellido/s">
+          <div class="error" id="err-apellido"></div>
+
+          <label>Email</label>
+          <input id="email" placeholder="usuario@dominio.com">
+          <div class="error" id="err-email"></div>
+
+          <label>Teléfono</label>
+          <input id="telefono" placeholder="Ej: 011-1234-5678">
+          <div class="error" id="err-telefono"></div>
+
+          <br>
+          <button type="submit">Registrar Cliente</button>
+        </form>
+      </div>
+
+      <!-- Listado -->
+      <div class="card">
+        <h2>Listado de Clientes</h2>
+        <div class="grid grid-3">
+          <input id="filtro-nombre" placeholder="Filtrar por nombre">
+          <input id="filtro-apellido" placeholder="Filtrar por apellido">
+          <input id="filtro-dni" placeholder="Filtrar por DNI">
+        </div>
+        <hr>
+        <div id="listaClientes" style="max-height:300px;overflow-y:auto;"></div>
+        <div id="contador" style="margin-top:10px;text-align:center;color:black;"></div>
+      </div>
+    </div>
+  </div>
+</body>
+
+<script>
+    let clientes = [];
+
+    window.addEventListener("DOMContentLoaded", () => {
+        const data = localStorage.getItem("clientes");
+        if (data) {
+            clientes = JSON.parse(data);
+            actualizarLista();
+        }
+    });
+
+    function guardarEnLocalStorage() {
+        localStorage.setItem("clientes", JSON.stringify(clientes));
+    }
+
+    function validarDNI(dni) {
+        if (!dni.trim()) return "El DNI es requerido";
+        if (!/^[0-9]+$/.test(dni)) return "El DNI debe contener solo números";
+        return null;
+    }
+
+    function validarNombre(nombre) {
+        if (!nombre.trim()) return "El nombre es requerido";
+        if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+(\s[a-zA-ZáéíóúÁÉÍÓÚñÑ]+)*$/.test(nombre))
+            return "El nombre o los nombres no son válidos";
+        return null;
+    }
+
+    function validarApellido(apellido) {
+        if (!apellido.trim()) return "El apellido es requerido";
+        if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ]+(\s[a-zA-ZáéíóúÁÉÍÓÚñÑ]+)*$/.test(apellido))
+            return "El apellido o los apellidos no son válidos";
+        return null;
+    }
+
+    function validarEmail(email) {
+        if (!email.trim()) return "El email es requerido";
+        if (!/^[^\s@]+@[^\s@]+(\.com)?$/.test(email))
+            return "El email no es válido";
+        return null;
+    }
+
+    function validarTelefono(tel) {
+        if (!tel.trim()) return "El teléfono es requerido";
+        if (!/^[0-9\-]+$/.test(tel))
+            return "El teléfono no es válido";
+        return null;
+    }
+
+    document.getElementById("formCliente").addEventListener("submit", e => {
+        e.preventDefault();
+        const dni = document.getElementById("dni").value;
+        const nombre = document.getElementById("nombre").value;
+        const apellido = document.getElementById("apellido").value;
+        const email = document.getElementById("email").value;
+        const telefono = document.getElementById("telefono").value;
+
+        const errores = {
+            dni: validarDNI(dni),
+            nombre: validarNombre(nombre),
+            apellido: validarApellido(apellido),
+            email: validarEmail(email),
+            telefono: validarTelefono(telefono)
+        };
+
+        let hayError = false;
+        for (let campo in errores) {
+            document.getElementById(`err-${campo}`).textContent = errores[campo] || "";
+            if (errores[campo]) hayError = true;
+        }
+        if (hayError) return;
+
+        if (clientes.some(c => c.dni === dni)) {
+            document.getElementById("err-dni").textContent = "Ya existe un cliente con este DNI";
+            return;
+        }
+
+        clientes.push({ id: Date.now(), dni, nombre, apellido, email, telefono });
+        guardarEnLocalStorage(); 
+        e.target.reset();
+        actualizarLista();
+    });
+
+    function actualizarLista() {
+        const fn = document.getElementById("filtro-nombre").value.toLowerCase();
+        const fa = document.getElementById("filtro-apellido").value.toLowerCase();
+        const fd = document.getElementById("filtro-dni").value;
+
+        const filtrados = clientes.filter(c =>
+            (fn === "" || c.nombre.toLowerCase().includes(fn)) &&
+            (fa === "" || c.apellido.toLowerCase().includes(fa)) &&
+            (fd === "" || c.dni.includes(fd))
+        );
+
+        const contenedor = document.getElementById("listaClientes");
+        contenedor.innerHTML = filtrados.length
+            ? filtrados.map(c => `
+                <div class="list-item">
+                    <strong>${c.nombre} ${c.apellido}</strong><br>
+                    DNI: ${c.dni}<br>
+                    Email: ${c.email}<br>
+                    Teléfono: ${c.telefono}
+                </div>
+            `).join("")
+            : `<p style="color:#cbd5e1;text-align:center;">${clientes.length ? "No se encontraron clientes" : "No hay clientes registrados"}</p>`;
+
+        document.getElementById("contador").textContent =
+            clientes.length ? `Mostrando ${filtrados.length} de ${clientes.length} clientes` : "";
+    }
+
+    document.getElementById("filtro-nombre").addEventListener("input", actualizarLista);
+    document.getElementById("filtro-apellido").addEventListener("input", actualizarLista);
+    document.getElementById("filtro-dni").addEventListener("input", actualizarLista);
+</script>
+
+</body>
+</html>
